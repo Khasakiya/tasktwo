@@ -13,6 +13,9 @@ function App() {
 
   const [users, setUsers] = useState([]);
 
+  const [editingUserId, setEditingUserId] = useState(null);
+
+
   const fetchUsers = async () => {
     try {
       const response = await fetch('http://localhost:8000/login');
@@ -42,24 +45,30 @@ function App() {
     e.preventDefault();
     console.log(user);
     try {
-      const response = await fetch('http://localhost:8000/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(user),
-      });
-      if(response.ok){
-        setUser({username:"",
-          password:"",
-          role:""})
+      if (editingUserId) {
+        await fetch(`http://localhost:8000/login/${editingUserId}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(user),
+        });
+        setEditingUserId(null);
+      } else {
+        await fetch('http://localhost:8000/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(user),
+        });
       }
-      console.log(response);
+      setUser({ username: '', password: '', role: '' }); 
       fetchUsers();
     } catch (error) {
-      console.log(error);
+      console.error('Error submitting form:', error);
     }
-  }
+  };
 
   const handleDelete = async (id) => {
     try {
@@ -71,6 +80,11 @@ function App() {
       console.error(error);
     }
   };
+
+  const handleEdit = async(user) =>{
+    setUser({username: user.username, password: user.password, role: user.role});
+    setEditingUserId(user._id);
+  }
 
   return (
     <div class="container logincontainer">
@@ -95,7 +109,7 @@ function App() {
                  value={user.role}
                  onChange={handleInput}required/>
             </div>
-            <button type="submit">Login</button>
+            <button type="submit">{editingUserId ? 'Update' : 'Login'}</button>
         </form>
       </div>
       <div class="itemcenter">
@@ -119,7 +133,7 @@ function App() {
                     <td>{user.role}</td>
                     <td style={{textAlign:'center'}}>
                       <MdDelete onClick={() => handleDelete(user._id)} />
-                      <FaRegEdit />
+                      <FaRegEdit onClick={() => handleEdit(user)} />
                     </td>
                   </tr>
                 ))}
